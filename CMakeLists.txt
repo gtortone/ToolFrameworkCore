@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Tipo di build" FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "build type" FORCE)
 endif()
 
 option(TF_BUILD_SHARED "build shared libraries (.so)" ON)
@@ -26,20 +26,16 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(ToolFrameworkDependencies)
 
 set(TF_BOOST_COMPONENTS date_time serialization iostreams
-    CACHE STRING "Componenti Boost richiesti da ToolFramework")
+    CACHE STRING "Boost libs required")
 
-find_zeromq()
 find_boost_dependencies(${TF_BOOST_COMPONENTS})
 
-message(STATUS "ZeroMQ include : ${ZMQ_INCLUDE_DIRS}")
-message(STATUS "ZeroMQ library : ${ZMQ_LIBRARIES}")
-message(STATUS "Boost  include : ${Boost_INCLUDE_DIRS}")
-message(STATUS "Boost  version : ${Boost_VERSION}")
+message(STATUS "Boost include: ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost version: ${Boost_VERSION}")
 
-include_directories(${ZMQ_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIRS})
 
 set(EXTERNAL_LIBS
-    ToolFramework::ZeroMQ
     Boost::date_time
     Boost::serialization
     Boost::iostreams)
@@ -102,9 +98,9 @@ add_tf_library(TempTools ${TEMPTOOLS_SRC})
 file(GLOB_RECURSE TOOLCHAIN_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/ToolChain/*.cpp")
 add_tf_library(ToolChain ${TOOLCHAIN_SRC})
 
-set(DEP_ToolChain     Store Logging DataModelBase)
+set(DEP_ToolChain Store Logging DataModelBase)
 set(DEP_TempDataModel DataModelBase)
-set(DEP_TempTools     Store Logging DataModelBase ToolChain)
+set(DEP_TempTools Store Logging DataModelBase ToolChain)
 
 foreach(_lib ToolChain TempDataModel TempTools)
     foreach(_variant "" "_static")
