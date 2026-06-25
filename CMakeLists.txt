@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.20)
+cmake_policy(SET CMP0144 NEW)
+cmake_policy(SET CMP0167 OLD)
+
 project(ToolFrameworkCore LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -28,7 +31,17 @@ include(ToolFrameworkDependencies)
 set(TF_BOOST_COMPONENTS date_time serialization iostreams
     CACHE STRING "Boost libs required")
 
-find_boost_dependencies(${TF_BOOST_COMPONENTS})
+if(DEFINED BOOST_ROOT)
+    message(STATUS "Using custom BOOST_ROOT: ${BOOST_ROOT}")
+    set(BOOST_ROOT ${BOOST_ROOT} CACHE PATH "Boost lib root directory")
+    set(Boost_NO_SYSTEM_PATHS ON)
+
+    find_package(Boost REQUIRED
+       COMPONENTS ${TF_BOOST_COMPONENTS}
+   )
+else()
+   find_boost_dependencies(${TF_BOOST_COMPONENTS})
+endif()
 
 message(STATUS "Boost include: ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost version: ${Boost_VERSION}")

@@ -11,8 +11,6 @@ CMakeLists.txt contains function to autodetect ZMQ and BOOST libaries if availab
 
 ## Build options for CMake
 
-```-DZMQ_ROOT=/path/zeromq```: set ZMQ library path
-
 ```-DBOOST_ROOT=/path/boost```: set BOOT library path
 
 ```-DTF_BUILD_SHARED=ON```: build shared libraries (default)
