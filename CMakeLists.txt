@@ -1,53 +1,136 @@
-cmake_minimum_required (VERSION 2.6)
-project (ToolFrameworkCore)
+cmake_minimum_required(VERSION 3.12)
+project(ToolFrameworkCore LANGUAGES CXX)
 
-set(DATAMODEL_INC "")
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Tipo di build" FORCE)
+endif()
+
+option(TF_BUILD_SHARED "build shared libraries (.so)" ON)
+option(TF_BUILD_STATIC "build static libraries (.a)" ON)
+
+if(NOT TF_BUILD_SHARED AND NOT TF_BUILD_STATIC)
+    message(FATAL_ERROR
+       "TF_BUILD_SHARED or TF_BUILD_STATIC must be ON.")
+endif()
+
+add_library(tf_project_options INTERFACE)
+target_compile_options(tf_project_options INTERFACE
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-unused-result>)
+
+set(DATAMODEL_INC      "")
 set(DATAMODEL_LIB_PATH "")
-set(DATAMODEL_LIBS "")
+set(DATAMODEL_LIBS     "")
+set(MYTOOLS_INC        "")
+set(MYTOOLS_LIB_PATH   "")
+set(MYTOOLS_LIBS       "")
 
-set(MYTOOLS_INC "")
-set(MYTOOLS_LIB_PATH "")
-set(MYTOOLS_LIBS "")
-
-include_directories (${DATAMODEL_INC} ${MYTOOLS_INC})
+include_directories(${DATAMODEL_INC} ${MYTOOLS_INC})
 link_directories(${DATAMODEL_LIB_PATH} ${MYTOOLS_LIB_PATH})
 
-MACRO(HEADER_DIRECTORIES return_list)
-    FILE(GLOB_RECURSE new_list ${PROJECT_SOURCE_DIR}/*.h)
-    FILE(COPY ${new_list} DESTINATION ${PROJECT_BINARY_DIR}/include)
-    SET(dir_list "")
-    FOREACH(file_path ${new_list})
-        GET_FILENAME_COMPONENT(dir_path ${file_path} PATH)
-        SET(dir_list ${dir_list} ${dir_path})
-    ENDFOREACH()
-    LIST(REMOVE_DUPLICATES dir_list)
-    SET(${return_list} ${dir_list})
-ENDMACRO()
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+include(ToolFrameworkDependencies)
 
-FILE(COPY ${PROJECT_SOURCE_DIR}/configfiles DESTINATION ${PROJECT_BINARY_DIR}/)
+set(TF_BOOST_COMPONENTS date_time serialization iostreams
+    CACHE STRING "Componenti Boost richiesti da ToolFramework")
 
-HEADER_DIRECTORIES(header_list)
+find_zeromq()
+find_boost_dependencies(${TF_BOOST_COMPONENTS})
+
+message(STATUS "ZeroMQ include : ${ZMQ_INCLUDE_DIRS}")
+message(STATUS "ZeroMQ library : ${ZMQ_LIBRARIES}")
+message(STATUS "Boost  include : ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost  version : ${Boost_VERSION}")
+
+include_directories(${ZMQ_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
+
+set(EXTERNAL_LIBS
+    ToolFramework::ZeroMQ
+    Boost::date_time
+    Boost::serialization
+    Boost::iostreams)
+
+function(collect_header_dirs return_list)
+    file(GLOB_RECURSE _headers ${PROJECT_SOURCE_DIR}/*.h)
+    set(_dirs "")
+    foreach(_h ${_headers})
+        get_filename_component(_d ${_h} PATH)
+        list(APPEND _dirs ${_d})
+    endforeach()
+    if(_dirs)
+        list(REMOVE_DUPLICATES _dirs)
+    endif()
+    set(${return_list} ${_dirs} PARENT_SCOPE)
+endfunction()
+
+file(COPY ${PROJECT_SOURCE_DIR}/configfiles DESTINATION ${PROJECT_BINARY_DIR}/)
+
+collect_header_dirs(header_list)
 include_directories(${header_list})
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
-file(GLOB_RECURSE STORE_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/Store/*.cpp")
-add_library(Store SHARED ${STORE_SRC})
+function(add_tf_library name)
+    set(_srcs ${ARGN})
 
-file(GLOB_RECURSE LOGGING_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/Logging/*.cpp")
-add_library(Logging SHARED ${LOGGING_SRC})
+    add_library(${name}_objs OBJECT ${_srcs})
+    target_link_libraries(${name}_objs PRIVATE tf_project_options ${EXTERNAL_LIBS})
+
+    if(TF_BUILD_SHARED)
+        add_library(${name} SHARED $<TARGET_OBJECTS:${name}_objs>)
+        target_link_libraries(${name} PUBLIC ${EXTERNAL_LIBS})
+        set_target_properties(${name} PROPERTIES OUTPUT_NAME ${name})
+    endif()
+
+    if(TF_BUILD_STATIC)
+        add_library(${name}_static STATIC $<TARGET_OBJECTS:${name}_objs>)
+        target_link_libraries(${name}_static PUBLIC ${EXTERNAL_LIBS})
+        set_target_properties(${name}_static PROPERTIES OUTPUT_NAME ${name})
+    endif()
+endfunction()
+
+file(GLOB_RECURSE STORE_SRC         RELATIVE ${CMAKE_SOURCE_DIR} "src/Store/*.cpp")
+add_tf_library(Store ${STORE_SRC})
+
+file(GLOB_RECURSE LOGGING_SRC       RELATIVE ${CMAKE_SOURCE_DIR} "src/Logging/*.cpp")
+add_tf_library(Logging ${LOGGING_SRC})
 
 file(GLOB_RECURSE DATAMODELBASE_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/DataModelBase/*.cpp")
-add_library(DataModelBase SHARED ${DATAMODELBASE_SRC})
+add_tf_library(DataModelBase ${DATAMODELBASE_SRC})
 
 file(GLOB_RECURSE TEMPDATAMODEL_SRC RELATIVE ${CMAKE_SOURCE_DIR} "DataModel/*.cpp")
-add_library(TempDataModel SHARED ${TEMPDATAMODEL_SRC})
+add_tf_library(TempDataModel ${TEMPDATAMODEL_SRC})
 
-file(GLOB_RECURSE TEMPTOOLS_SRC RELATIVE ${CMAKE_SOURCE_DIR} "UserTools/*.cpp")
-add_library(TempTools SHARED ${TEMPTOOLS_SRC})
+file(GLOB_RECURSE TEMPTOOLS_SRC     RELATIVE ${CMAKE_SOURCE_DIR} "UserTools/*.cpp")
+add_tf_library(TempTools ${TEMPTOOLS_SRC})
 
-file(GLOB_RECURSE TOOLCHAIN_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/ToolChain/*.cpp")
-add_library(ToolChain SHARED ${TOOLCHAIN_SRC})
+file(GLOB_RECURSE TOOLCHAIN_SRC     RELATIVE ${CMAKE_SOURCE_DIR} "src/ToolChain/*.cpp")
+add_tf_library(ToolChain ${TOOLCHAIN_SRC})
 
-add_executable (main ${PROJECT_SOURCE_DIR}/src/main.cpp)
-target_link_libraries (main Store Logging DataModelBase ToolChain TempTools TempDataModel pthread ${DATAMODEL_LIBS} ${MYTOOLS_LIBS})
+if(TF_BUILD_SHARED)
+    set(_tf_suffix "")
+else()
+    set(_tf_suffix "_static")
+endif()
+
+set(TF_CORE_LIBS
+    Store${_tf_suffix}
+    Logging${_tf_suffix}
+    DataModelBase${_tf_suffix}
+    ToolChain${_tf_suffix}
+    TempTools${_tf_suffix}
+    TempDataModel${_tf_suffix})
+
+add_executable(main ${PROJECT_SOURCE_DIR}/src/main.cpp)
+target_link_libraries(main
+    tf_project_options
+    ${TF_CORE_LIBS}
+    pthread
+    ${EXTERNAL_LIBS}
+    ${DATAMODEL_LIBS}
+    ${MYTOOLS_LIBS})

@@ -1,28 +1,26 @@
-![ToolFramework](https://user-images.githubusercontent.com/14093889/147487041-eff81a5d-45e4-4f3c-9cde-8066b9726659.png)
+# ToolFrameworkCore
 
-ToolFramework is an open source general modular C++ Framework.
+## Build
 
+```
+cmake -B build
+make -j -C build
+```
 
-# *PLEASE NOTE: This is the core framework only!!! do not clone this repo for building your own application.
-To create your own ToolFramework appliciaion please clone/fork the ToolApplication repository https://github.com/ToolFramework/ToolApplication which has a script ```GetToolFramework.sh``` to pull this repository down as a dependancy and set up everything for you.
+CMakeLists.txt contains function to autodetect ZMQ and BOOST libaries if available on the host.
 
-****************************
-# Concept
-****************************
+## Build options for CMake
 
-The main executable creates a ToolChain which is an object that holds Tools. Tools are added to the ToolChain and then the ToolChain can be told to Initialise Execute and Finalise each Tool in the chain.
+```-DZMQ_ROOT=/path/zeromq```: set ZMQ library path
 
-The ToolChain also holds a uesr defined DataModel which each Tool has access too and can read ,update and modify. This is the method by which data is passed between Tools.
+```-DBOOST_ROOT=/path/boost```: set BOOT library path
 
-User Tools can be generated for use in the ToolChain by included scripts.
+```-DTF_BUILD_SHARED=ON```: build shared libraries (default)
 
-For more information consult the ToolFramework manual:
+```-DTF_BUILD_STATIC=ON```: build static libraries (default)
 
-https://docs.google.com/document/d/18rgYMOAGt3XiW9i0qN9kfUK1ssbQgLV1gQgG3hyVUoA
+## Cross build
 
-or the Doxygen docs
-
-docs https://toolframework.github.io/ToolFrameworkCore/
-
-
-Copyright (c) 2016 Benjamin Richards (benjamin.richards@warwick.ac.uk)
+```
+cmake -B build-arm -DCMAKE_TOOLCHAIN_FILE=cmake/toolchain-arm-linux-gnueabihf.cmake 
+```
