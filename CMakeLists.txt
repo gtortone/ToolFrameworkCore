@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.13)
 project(ToolFrameworkCore LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -21,16 +21,6 @@ endif()
 add_library(tf_project_options INTERFACE)
 target_compile_options(tf_project_options INTERFACE
     $<$<CXX_COMPILER_ID:GNU,Clang>:-Wno-unused-result>)
-
-set(DATAMODEL_INC      "")
-set(DATAMODEL_LIB_PATH "")
-set(DATAMODEL_LIBS     "")
-set(MYTOOLS_INC        "")
-set(MYTOOLS_LIB_PATH   "")
-set(MYTOOLS_LIBS       "")
-
-include_directories(${DATAMODEL_INC} ${MYTOOLS_INC})
-link_directories(${DATAMODEL_LIB_PATH} ${MYTOOLS_LIB_PATH})
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(ToolFrameworkDependencies)
@@ -94,10 +84,10 @@ function(add_tf_library name)
     endif()
 endfunction()
 
-file(GLOB_RECURSE STORE_SRC         RELATIVE ${CMAKE_SOURCE_DIR} "src/Store/*.cpp")
+file(GLOB_RECURSE STORE_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/Store/*.cpp")
 add_tf_library(Store ${STORE_SRC})
 
-file(GLOB_RECURSE LOGGING_SRC       RELATIVE ${CMAKE_SOURCE_DIR} "src/Logging/*.cpp")
+file(GLOB_RECURSE LOGGING_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/Logging/*.cpp")
 add_tf_library(Logging ${LOGGING_SRC})
 
 file(GLOB_RECURSE DATAMODELBASE_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/DataModelBase/*.cpp")
@@ -106,11 +96,27 @@ add_tf_library(DataModelBase ${DATAMODELBASE_SRC})
 file(GLOB_RECURSE TEMPDATAMODEL_SRC RELATIVE ${CMAKE_SOURCE_DIR} "DataModel/*.cpp")
 add_tf_library(TempDataModel ${TEMPDATAMODEL_SRC})
 
-file(GLOB_RECURSE TEMPTOOLS_SRC     RELATIVE ${CMAKE_SOURCE_DIR} "UserTools/*.cpp")
+file(GLOB_RECURSE TEMPTOOLS_SRC RELATIVE ${CMAKE_SOURCE_DIR} "UserTools/*.cpp")
 add_tf_library(TempTools ${TEMPTOOLS_SRC})
 
-file(GLOB_RECURSE TOOLCHAIN_SRC     RELATIVE ${CMAKE_SOURCE_DIR} "src/ToolChain/*.cpp")
+file(GLOB_RECURSE TOOLCHAIN_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/ToolChain/*.cpp")
 add_tf_library(ToolChain ${TOOLCHAIN_SRC})
+
+set(DEP_ToolChain     Store Logging DataModelBase)
+set(DEP_TempDataModel DataModelBase)
+set(DEP_TempTools     Store Logging DataModelBase ToolChain)
+
+foreach(_lib ToolChain TempDataModel TempTools)
+    foreach(_variant "" "_static")
+        if(TARGET ${_lib}${_variant})
+            set(_deps "")
+            foreach(_d ${DEP_${_lib}})
+                list(APPEND _deps ${_d}${_variant})
+            endforeach()
+            target_link_libraries(${_lib}${_variant} PUBLIC ${_deps})
+        endif()
+    endforeach()
+endforeach()
 
 if(TF_BUILD_SHARED)
     set(_tf_suffix "")
@@ -127,6 +133,9 @@ set(TF_CORE_LIBS
     TempDataModel${_tf_suffix})
 
 add_executable(main ${PROJECT_SOURCE_DIR}/src/main.cpp)
+
+target_link_options(main PRIVATE -Wl,--no-as-needed -Wl,--allow-shlib-undefined)
+
 target_link_libraries(main
     tf_project_options
     ${TF_CORE_LIBS}
@@ -134,3 +143,4 @@ target_link_libraries(main
     ${EXTERNAL_LIBS}
     ${DATAMODEL_LIBS}
     ${MYTOOLS_LIBS})
+

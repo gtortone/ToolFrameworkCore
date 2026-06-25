@@ -1,32 +1,3 @@
-# =============================================================================
-#  ToolFrameworkDependencies.cmake
-#
-#  Modulo riutilizzabile con le funzioni di discovery delle dipendenze esterne
-#  usate da ToolFramework (e progetti collegati): ZeroMQ e Boost.
-#
-#  USO in un CMakeLists.txt:
-#     list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-#     include(ToolFrameworkDependencies)
-#
-#     find_zeromq()
-#     find_boost_dependencies(date_time serialization iostreams)
-#
-#  Per riusarlo in un altro repository basta copiare questo file nella sua
-#  cartella  cmake/  e ripetere le due righe sopra.
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-#  find_zeromq()
-#
-#  CMake non fornisce un modulo FindZeroMQ ufficiale, quindi la ricerca avviene
-#  in due passi:
-#    1) pkg-config (se disponibile) per ricavare gli hint corretti
-#    2) ricerca manuale di header (zmq.h) e libreria (libzmq)
-#
-#  La funzione esporta nel chiamante (PARENT_SCOPE):
-#    ZeroMQ_FOUND, ZMQ_INCLUDE_DIRS, ZMQ_LIBRARIES
-#  e crea il target importato  ToolFramework::ZeroMQ  (uso consigliato).
-# -----------------------------------------------------------------------------
 function(find_zeromq)
     find_package(PkgConfig QUIET)
     if(PKG_CONFIG_FOUND)
@@ -64,17 +35,6 @@ function(find_zeromq)
     set(ZMQ_LIBRARIES    ${ZMQ_LIBRARY}      PARENT_SCOPE)
 endfunction()
 
-# -----------------------------------------------------------------------------
-#  find_boost_dependencies([component1 component2 ...])
-#
-#  Usa il modulo/Config ufficiale di Boost. I componenti richiesti si passano
-#  come argomenti; se non ne viene passato nessuno si usa un set predefinito
-#  (date_time serialization iostreams).
-#
-#  La funzione esporta nel chiamante (PARENT_SCOPE):
-#    Boost_FOUND, Boost_INCLUDE_DIRS, Boost_LIBRARIES
-#  ed espone i consueti target importati  Boost::date_time  ecc.
-# -----------------------------------------------------------------------------
 function(find_boost_dependencies)
     set(_components ${ARGN})
     if(NOT _components)
