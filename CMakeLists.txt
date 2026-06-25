@@ -147,7 +147,7 @@ set(TF_CORE_LIBS
     TempTools${_tf_suffix}
     TempDataModel${_tf_suffix})
 
-add_executable(main ${PROJECT_SOURCE_DIR}/src/main.cpp)
+add_executable(main ${PROJECT_SOURCE_DIR}/src/main-tfc.cpp)
 
 target_link_options(main PRIVATE -Wl,--no-as-needed -Wl,--allow-shlib-undefined)
 
