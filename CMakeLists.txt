@@ -99,22 +99,22 @@ function(add_tf_library name)
     endif()
 endfunction()
 
-file(GLOB_RECURSE STORE_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/Store/*.cpp")
+file(GLOB_RECURSE STORE_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/Store/*.cpp")
 add_tf_library(Store ${STORE_SRC})
 
-file(GLOB_RECURSE LOGGING_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/Logging/*.cpp")
+file(GLOB_RECURSE LOGGING_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/Logging/*.cpp")
 add_tf_library(Logging ${LOGGING_SRC})
 
-file(GLOB_RECURSE DATAMODELBASE_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/DataModelBase/*.cpp")
+file(GLOB_RECURSE DATAMODELBASE_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/DataModelBase/*.cpp")
 add_tf_library(DataModelBase ${DATAMODELBASE_SRC})
 
-file(GLOB_RECURSE TEMPDATAMODEL_SRC RELATIVE ${CMAKE_SOURCE_DIR} "DataModel/*.cpp")
+file(GLOB_RECURSE TEMPDATAMODEL_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "DataModel/*.cpp")
 add_tf_library(TempDataModel ${TEMPDATAMODEL_SRC})
 
-file(GLOB_RECURSE TEMPTOOLS_SRC RELATIVE ${CMAKE_SOURCE_DIR} "UserTools/*.cpp")
+file(GLOB_RECURSE TEMPTOOLS_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "UserTools/*.cpp")
 add_tf_library(TempTools ${TEMPTOOLS_SRC})
 
-file(GLOB_RECURSE TOOLCHAIN_SRC RELATIVE ${CMAKE_SOURCE_DIR} "src/ToolChain/*.cpp")
+file(GLOB_RECURSE TOOLCHAIN_SRC RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "src/ToolChain/*.cpp")
 add_tf_library(ToolChain ${TOOLCHAIN_SRC})
 
 set(DEP_ToolChain Store Logging DataModelBase)
